@@ -66,6 +66,14 @@ Enter API Key: abcd1234apikeytest
 Enter environment (e.g., prod, prod2 to prod7): prod3
 Fetching data...
 
+Zone     ServiceType     Address        AddressType
+----     -----------     -------        -----------
+zone1    gp_gateway      34.85.44.123    ipv4
+zone2    gp_gateway      35.194.44.23    ipv4
+
+Do you want to export the results to a CSV file? (Y/N): y
+Enter the full file name for the CSV (e.g., output.csv): prisma-results.csv
+Results exported successfully to 'prisma-results.csv'.
 
 
 2. Fetch a Different DataType
