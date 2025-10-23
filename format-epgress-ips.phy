@@ -1,0 +1,241 @@
+import sys
+import os
+import re
+import argparse
+import getpass
+import requests
+import json
+import csv
+import pandas as pd
+
+# Define data payloads
+DATA_PAYLOADS = {
+    "EgressIPs": '{"serviceType": "all", "addrType": "all", "location": "all"}',
+    "ActiveReservedOnboardedMobileUserLocations": '{"serviceType": "gp_gateway", "addrType": "all", "location": "deployed"}',
+    "ActiveIPOnboardedMobileUserLocations": '{"serviceType": "gp_gateway", "addrType": "active", "location": "deployed"}',
+    "ActiveMobileUserAddresses": '{"serviceType": "gp_gateway", "addrType": "all", "location": "all"}',
+    "RemoteNetworkAddresses": '{"serviceType": "remote_network", "addrType": "all", "location": "all"}',
+    "CleanPipeAddresses": '{"serviceType": "clean_pipe", "addrType": "all", "location": "all"}',
+    "ExplicitProxyAddresses": '{"serviceType": "swg_proxy", "location": "deployed", "addrType": "auth_cache_service"}'
+}
+
+def send_api_request(uri, method, headers, body=None):
+    """
+    Function to send API requests using the requests library.
+    """
+    try:
+        if method.upper() == 'GET':
+            response = requests.get(uri, headers=headers)
+        elif method.upper() == 'POST':
+            # Set Content-Type header as in the PS script
+            headers['Content-Type'] = 'application/json'
+            response = requests.post(uri, headers=headers, data=body)
+        else:
+            print(f"Unsupported HTTP method: {method}", file=sys.stderr)
+            sys.exit(1)
+            
+        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to fetch data from {uri}. Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+def display_formatted_result(result):
+    """
+    Function to display formatted results for most data types.
+    """
+    output_table = []
+    if not result:
+        return output_table
+        
+    for item in result:
+        zone = item.get('zone')
+        for detail in item.get('address_details', []):
+            row = {
+                "Zone": zone,
+                "ServiceType": detail.get('serviceType'),
+                "Address": detail.get('address'),
+                "AddressType": detail.get('addressType')
+            }
+            output_table.append(row)
+    return output_table
+
+def display_loopback_ips(result):
+    """
+    Function to display loopback IPs.
+    """
+    output_table = []
+    if not result:
+        return output_table
+
+    for item in result:
+        res_data = item.get('result', {})
+        fw_type = res_data.get('fwType')
+        for addr in res_data.get('addrList', []):
+            try:
+                location, loopback_ip = addr.split(':', 1)
+                row = {
+                    "Type": fw_type,
+                    "Location": location,
+                    "Loopback IP": loopback_ip
+                }
+                output_table.append(row)
+            except ValueError:
+                print(f"Warning: Skipping malformed address line: {addr}", file=sys.stderr)
+    return output_table
+
+def save_to_csv(data, file_path):
+    """
+    Helper function to save list of dicts to CSV.
+    """
+    if not data:
+        print("No data to export.")
+        return
+    
+    try:
+        with open(file_path, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=data[0].keys())
+            writer.writeheader()
+            writer.writerows(data)
+        print(f"Results exported successfully to '{file_path}'.")
+    except Exception as e:
+        print(f"Error writing CSV file: {e}", file=sys.stderr)
+
+def handle_csv_export(data):
+    """
+    Function to handle interactive CSV prompt.
+    """
+    create_csv = input("Do you want to export the results to a CSV file? (Y/N): ")
+    if create_csv.lower() == 'y':
+        csv_file_name = input("Enter the full file name for the CSV (e.g., output.csv): ")
+        if csv_file_name and csv_file_name.strip():
+            save_to_csv(data, csv_file_name.strip())
+        else:
+            print("Invalid file name. Skipping export.", file=sys.stderr)
+
+def save_to_file(raw_data, display_data, file_path, data_type):
+    """
+    Handles saving output to JSON, CSV, or TXT based on file extension.
+    """
+    ext = os.path.splitext(file_path)[1].lower()
+    
+    try:
+        if ext == '.json':
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(raw_data, f, indent=4)
+            print(f"Raw JSON data saved to '{file_path}'.")
+            
+        elif ext == '.csv':
+            save_to_csv(display_data, file_path)
+            
+        elif ext == '.txt':
+            with open(file_path, 'w', encoding='utf-8') as f:
+                if data_type == 'loopback_ip':
+                    # raw_data is a list of response dicts
+                    for item in raw_data:
+                        for addr in item.get('result', {}).get('addrList', []):
+                            f.write(addr.split(':', 1)[1] + '\n')
+                else:
+                    # raw_data is the 'result' list
+                    for item in raw_data:
+                        for detail in item.get('address_details', []):
+                            f.write(detail.get('address') + '\n')
+            print(f"IP addresses saved to '{file_path}'.")
+            
+        else:
+            print(f"Unsupported file extension: {ext}", file=sys.stderr)
+            
+    except Exception as e:
+        print(f"Error writing to file '{file_path}': {e}", file=sys.stderr)
+
+
+def main():
+    # Parameter definitions
+    parser = argparse.ArgumentParser(description="Fetch Prisma Access IP data.")
+    parser.add_argument('--region', default='US', help='Region (e.g., US, CN). Default: US')
+    parser.add_argument('--api_key', default=None, help='API Key')
+    parser.add_argument('--environment', default=None, help='Environment (e.g., prod, prod2 to prod7)')
+    parser.add_argument('--dataType', default='EgressIPs', help='Data type to fetch. Default: EgressIPs')
+    parser.add_argument('--outputFile', default=None, help='Optional file path to save output (json, csv, txt)')
+    
+    args = parser.parse_args()
+
+    # Prompt for API Key if not provided
+    if not args.api_key:
+        try:
+            args.api_key = getpass.getpass("Enter API Key: ")
+        except (EOFError, KeyboardInterrupt):
+            sys.exit("\nOperation cancelled.")
+    if not args.api_key or not args.api_key.strip():
+        print("Please enter a valid API key.", file=sys.stderr)
+        sys.exit(1)
+
+    # Prompt for Environment if not provided
+    if not args.environment:
+        try:
+            args.environment = input("Enter environment (e.g., prod, prod2 to prod7): ")
+        except (EOFError, KeyboardInterrupt):
+            sys.exit("\nOperation cancelled.")
+
+    # Validate environment format
+    if not re.match(r"^prod([0-7])?$", args.environment):
+        print("Invalid environment. Use 'prod' or 'prod2' through 'prod7'.", file=sys.stderr)
+        sys.exit(1)
+
+    # Define the base API URI based on region and environment
+    if args.region == 'CN':
+        uri_base = f"https://api.{args.environment}.datapath.prismaaccess.cn"
+    else:
+        uri_base = f"https://api.{args.environment}.datapath.prismaaccess.com"
+
+    # Define headers for API requests
+    headers = {
+        "header-api-key": args.api_key
+    }
+    
+    raw_data_to_save = None
+    display_data = []
+
+    # Main logic based on dataType
+    if args.dataType == 'loopback_ip':
+        loopback_results = []
+        fw_types = ['gpcs_gp_gw', 'gpcs_gp_portal', 'gpcs_remote_network']
+        
+        for fw_type in fw_types:
+            loopback_uri = f"{uri_base}/getAddrList/latest?fwType={fw_type}&addrType=loopback_ip"
+            print(f"Fetching data for {fw_type}...")
+            result = send_api_request(loopback_uri, 'GET', headers)
+            loopback_results.append(result)
+            
+        raw_data_to_save = loopback_results
+        display_data = display_loopback_ips(loopback_results)
+        
+    else:
+        api_uri = f"{uri_base}/getPrismaAccessIP/v2"
+        if args.dataType in DATA_PAYLOADS:
+            body = DATA_PAYLOADS[args.dataType]
+            print(f"Fetching data for {args.dataType}...")
+            result = send_api_request(api_uri, 'POST', headers, body)
+            
+            raw_data_to_save = result.get('result')
+            display_data = display_formatted_result(raw_data_to_save)
+        else:
+            print(f"Unsupported data type: {args.dataType}", file=sys.stderr)
+            sys.exit(1)
+
+    # Handle output
+    if args.outputFile:
+        save_to_file(raw_data_to_save, display_data, args.outputFile, args.dataType)
+    else:
+        if display_data:
+            # Use pandas to print a formatted table
+            df = pd.DataFrame(display_data)
+            print(df.to_string(index=False))
+            
+            # Prompt for interactive CSV export
+            handle_csv_export(display_data)
+        else:
+            print("No data returned or processed.")
+
+if __name__ == "__main__":
+    main()
