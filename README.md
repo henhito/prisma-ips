@@ -1,63 +1,60 @@
-# Prisma Access IP Fetcher - PowerShell Script
+# Prisma Access IP Fetcher - Python & PowerShell
 
-![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue?logo=powershell)
-![License](https://img.shields.io/badge/license-MIT-green)
+This repository provides scripts in both **Python** and **PowerShell** to interact with the **Prisma Access API** to retrieve various IP addresses, including **Egress IPs**, **Loopback IPs**, **Mobile User IPs**, and **Remote Network Reserved Addresses**.
 
-This PowerShell script interacts with the **Prisma Access API** to retrieve various IP addresses, including **Egress IPs**, **Loopback IPs**, **Mobile User IPs**, and **Remote Network Reserved Addresses**.  
 It supports **Global** and **China** tenants automatically based on your input.
 
 ---
 
 ## ✨ Features
 
-- Interactive prompts for API Key and Environment if not specified.
-- Supports multiple **data types** retrieval.
-- **Region-aware**: US/global (`.com`) and China tenants (`.cn`).
-- Automatic or optional **export** to CSV, JSON, or TXT files.
-- Proper error handling and validations.
-
----
-
-## ⚙️ Requirements
-
-- PowerShell 5.1 or newer (also compatible with PowerShell Core / 7+)
-- Internet access to Prisma Access APIs
-- A valid Prisma Access API Key
+* Interactive prompts for API Key and Environment if not specified.
+* Supports multiple **data types** retrieval.
+* **Region-aware**: US/global (`.com`) and China tenants (`.cn`).
+* Automatic or optional **export** to CSV, JSON, or TXT files.
+* Proper error handling and validations.
 
 ---
 
 ## 📋 Parameters
 
-| Parameter    | Description                                                                | Required | Default |
-|--------------|----------------------------------------------------------------------------|----------|---------|
-| `-region`     | Region to connect to (`US` or `CN`)                                          | No       | `US`     |
-| `-api_key`    | API Key for Prisma Access API. If missing, it will prompt interactively.     | Yes      | None    |
-| `-environment`| Prisma environment (`prod`, `prod2`, ..., `prod7`). Prompted if missing.     | Yes      | None    |
-| `-dataType`   | Type of data to fetch. See options below.                                   | No       | `EgressIPs` |
-| `-outputFile` | File path to export results. If omitted, script asks interactively after fetch. | No    | None    |
+Both scripts use the same set of parameters, just with different syntax.
+
+| Parameter (PowerShell) | Parameter (Python) | Description | Required | Default |
+| :--- | :--- | :--- | :--- | :--- |
+| `-region` | `--region` | Region to connect to (`US` or `CN`) | No | `US` |
+| `-api_key` | `--api_key` | API Key. If missing, prompts interactively. | Yes | None |
+| `-environment` | `--environment` | Prisma environment (`prod`, `prod2`, ..., `prod7`). Prompted if missing. | Yes | None |
+| `-dataType` | `--dataType` | Type of data to fetch. See options below. | No | `EgressIPs` |
+| `-outputFile` | `--outputFile` | File path to export results (json, csv, txt). If omitted, script asks interactively after fetch. | No | None |
 
 ---
 
 ## 📂 Supported DataTypes
 
-- `EgressIPs`
-- `DeployedMobileUserAddresses_All`
-- `DeployedMobileUserAddresses_ActiveOnly`
-- `RemoteNetworkAddresses`
-- `ReservedRemoteNetworkAddresses`
-- `CleanPipeAddresses`
-- `ExplicitProxyAddresses`
-- `loopback_ip` (special case for loopback IPs)
+* `EgressIPs`
+* `ActiveReservedOnboardedMobileUserLocations`
+* `ActiveIPOnboardedMobileUserLocations`
+* `ActiveMobileUserAddresses`
+* `RemoteNetworkAddresses`
+* `CleanPipeAddresses`
+* `ExplicitProxyAddresses`
+* `loopback_ip` (special case for loopback IPs)
 
 ---
 
 ## 🚀 How to Use
 
----
+Choose the instructions for the script you want to run.
 
-### Example 1: Running with No Parameters (Interactive Mode)
+### 🐍 Python Script (e.g., `fetch_prisma_ips.py`)
 
-If you simply run the script without any parameters, it will prompt you for everything:
+First, save the Python script I provided you to a file (e.g., `fetch_prisma_ips.py`).
 
-```powershell
-.\Fetch-PrismaAccessIPs.ps1
+**Requirements:**
+* Python 3.x
+* Required libraries: `requests` and `pandas`.
+
+You can install the required libraries using pip:
+```bash
+pip install requests pandas
