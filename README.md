@@ -1,223 +1,251 @@
-# Prisma Access IP Fetcher (Python & PowerShell)
+# Prisma Access IP Utilities
 
-Fetch Prisma Access service IPs (egress, mobile user, remote network, explicit proxy, Clean Pipe) **and** loopback addresses, then export as table/CSV/JSON/TXT. The repo contains **both** a Python CLI and a PowerShell script; use whichever fits your workflow.
-
----
-
-## Contents
-
-- [Features](#features)
-- [Quick Start](#quick-start)
-  - [Python CLI (`prisma_ips.py`)](#python-cli-prisma_ipspy)
-  - [PowerShell Script (`format-egress-ips.ps1`)](#powershell-script-format-egress-ipss1)
-- [Datasets (`--dataType` / `-dataType`)](#datasets---datatype--datatype)
-- [Authentication](#authentication)
-- [Regions & Environments](#regions--environments)
-- [Exports](#exports)
-- [Exit Codes & Errors](#exit-codes--errors)
-- [How it Works (Endpoints)](#how-it-works-endpoints)
-- [Troubleshooting](#troubleshooting)
-- [Development](#development)
-- [License](#license)
+Fetch Prisma Access service IP data from Prisma Access APIs and display it in the console or export it as CSV, JSON, or TXT. The project includes both a Python implementation and a PowerShell implementation.
 
 ---
 
-## Features
+## 🚀 Quick Start
 
-- ✅ Python and PowerShell implementations
-- ✅ US/global (`.com`) and CN (`.cn`) tenants
-- ✅ `POST /getPrismaAccessIP/v2` and `GET /getAddrList/latest` (loopback)
-- ✅ Pretty console table (Python) and clean output (PowerShell)
-- ✅ Export to **CSV**, **JSON**, or **TXT** (IPs-only lists)
-- ✅ Interactive prompts when flags are omitted
-- ✅ Clear validation and error handling
-
----
-
-## Quick Start
-
-### Python CLI (`prisma_ips.py`)
-
-Requirements:
-- **Python 3.9+**
-- `pip install -r requirements.txt` *(or: `pip install requests pandas`)*
+### Python (30 seconds)
 
 ```bash
-# Clone
 git clone https://github.com/henhito/prisma-ips.git
 cd prisma-ips
-
-# (Optional) virtual env
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
-
-# Install deps
-pip install -r requirements.txt
-
-# Run (prompts for API key & environment if missing)
-python prisma_ips.py --dataType EgressIPs --region US
+python -m pip install -r requirements.txt
+python format-egress-ips.py --dataType EgressIPs
 ```
 
-Common examples:
-```bash
-# Table to console
-python prisma_ips.py --environment prod --dataType EgressIPs
+### PowerShell (30 seconds)
 
-# Export CSV
-python prisma_ips.py --environment prod --dataType RemoteNetworkAddresses --outputFile remote_networks.csv
-
-# Raw JSON
-python prisma_ips.py --environment prod --dataType ActiveMobileUserAddresses --outputFile mobile_users.json
-
-# IP list (TXT)
-python prisma_ips.py --environment prod --dataType EgressIPs --outputFile egress_ips.txt
-python prisma_ips.py --environment prod --dataType loopback_ip --outputFile loopbacks.txt
-```
-
-Non‑interactive/CI:
-```bash
-python prisma_ips.py   --region US   --environment prod   --api_key "$PRISMA_API_KEY"   --dataType ExplicitProxyAddresses   --outputFile explicit_proxy.csv
-```
-
----
-
-### PowerShell Script (`format-egress-ips.ps1`)
-
-Requirements:
-- **PowerShell 7+** (recommended; Windows PowerShell 5.1 works too)
-- Network egress allowed to Prisma Access API domains
-
-Run from the repo root:
 ```powershell
-# Basic (prompts when missing)
-.ormat-egress-ips.ps1 -environment prod -dataType EgressIPs
-
-# Explicit region and API key
-.ormat-egress-ips.ps1 -region US -environment prod -api_key $Env:PRISMA_API_KEY -dataType RemoteNetworkAddresses
-
-# Save to CSV / JSON / TXT
-.ormat-egress-ips.ps1 -environment prod -dataType CleanPipeAddresses -outputFile .\cleanpipe.csv
-.ormat-egress-ips.ps1 -environment prod -dataType ActiveMobileUserAddresses -outputFile .\mobile_users.json
-.ormat-egress-ips.ps1 -environment prod -dataType EgressIPs -outputFile .\egress_ips.txt
+git clone https://github.com/henhito/prisma-ips.git
+cd prisma-ips
+.\format-egress-ips.ps1 -environment prod -dataType EgressIPs
 ```
-
-**Parameters (PowerShell / Python):**
-
-| PowerShell | Python | Description | Required | Default |
-|---|---|---|---|---|
-| `-region` | `--region` | API region: `US` or `CN` | No | `US` |
-| `-api_key` | `--api_key` | Prisma datapath API key | Yes | — |
-| `-environment` | `--environment` | `prod`, `prod2`…`prod7` | Yes | — |
-| `-dataType` | `--dataType` | Dataset to fetch (see below) | No | `EgressIPs` |
-| `-outputFile` | `--outputFile` | Export file path (`.csv`, `.json`, `.txt`) | No | — |
-
-> If `-api_key/--api_key` or `-environment/--environment` are omitted, scripts prompt interactively.
 
 ---
 
-## Datasets (`--dataType` / `-dataType`)
+## 🧭 Interactive Mode
 
-Both implementations support the same datasets:
+Both scripts support interactive mode. If required parameters are not provided, the script will prompt for them.
 
-- `EgressIPs`
-- `ActiveReservedOnboardedMobileUserLocations`
-- `ActiveIPOnboardedMobileUserLocations`
-- `ActiveMobileUserAddresses`
-- `RemoteNetworkAddresses`
-- `CleanPipeAddresses`
-- `ExplicitProxyAddresses`
-- `loopback_ip` *(special; fetched via `/getAddrList/latest`)*
+### Python Interactive Example
+
+```bash
+python format-egress-ips.py
+```
+
+Example prompts:
+
+```
+Enter API Key:
+Enter environment (e.g., prod, prod2 to prod7):
+Enter dataType:
+```
+
+---
+
+### PowerShell Interactive Example
+
+```powershell
+.\format-egress-ips.ps1
+```
+
+Example prompts:
+
+```
+Enter API Key:
+Enter environment (e.g., prod, prod2 to prod7):
+Enter dataType:
+```
+
+---
+
+### Partial Interactive Usage
+
+You can provide some parameters and be prompted for the rest.
+
+```bash
+python format-egress-ips.py --dataType EgressIPs
+```
+
+```powershell
+.\format-egress-ips.ps1 -dataType EgressIPs
+```
 
 ---
 
 ## Authentication
 
-Supply your **Prisma Access datapath** API key:
-- **PowerShell**: `-api_key $Env:PRISMA_API_KEY` or let it prompt
-- **Python**: `--api_key "$PRISMA_API_KEY"` or let it prompt
+Authentication is API key only.
 
-**Keep keys out of source control.** Prefer environment variables or a secrets manager.
+The scripts send the API key using the `header-api-key` HTTP header.
 
 ---
 
-## Regions & Environments
+## Regions and API Domains
 
-- **Region**: `US` (default) or `CN`  
-  - US base: `https://api.{environment}.datapath.prismaaccess.com`  
-  - CN base: `https://api.{environment}.datapath.prismaaccess.cn`
+- `CN` → China tenant → `.cn` domain  
+- Any other value → Global tenant → `.com` domain  
 
-- **Environment**: must match `^prod([0-7])?$` (i.e., `prod`, `prod2`…`prod7`).
+Base URL format:
+
+- China:
+  `https://api.{environment}.datapath.prismaaccess.cn`
+- Global:
+  `https://api.{environment}.datapath.prismaaccess.com`
 
 ---
 
-## Exports
+## Environments
 
-- **CSV**: normalized table
-  - Non-loopback columns: `Zone,ServiceType,Address,AddressType`
-  - Loopback columns: `Type,Location,Loopback IP`
-- **JSON**: raw API `result` payload (Python) / structured object (PowerShell)
-- **TXT**: IP-per-line (loopback parses `<location>:<ip>` to `<ip>`)
+Valid values:
 
-Examples:
-```bash
-python prisma_ips.py --environment prod --dataType EgressIPs --outputFile egress.csv
-python prisma_ips.py --environment prod --dataType loopback_ip --outputFile loopbacks.txt
 ```
-```powershell
-.ormat-egress-ips.ps1 -environment prod -dataType EgressIPs -outputFile .\egress.csv
-.ormat-egress-ips.ps1 -environment prod -dataType loopback_ip -outputFile .\loopbacks.txt
+prod
+prod2
+prod3
+prod4
+prod5
+prod6
+prod7
 ```
 
 ---
 
-## Exit Codes & Errors
+## Datasets
 
-- Scripts return **non‑zero** on validation or request failures.
-- Common issues:
-  - **401/403** invalid API key or tenant mismatch
-  - **404** wrong environment host / endpoint not available
-  - **429** rate limiting (back off & retry)
-  - Network timeouts
-
-Both scripts print descriptive errors to **stderr** (or PS error stream).
+| Data type | Description |
+|----------|-------------|
+| EgressIPs | Prisma Access egress/public service IPs |
+| ActiveReservedOnboardedMobileUserLocations | Reserved/onboarded mobile user locations |
+| ActiveIPOnboardedMobileUserLocations | Active IP-based mobile user locations |
+| ActiveMobileUserAddresses | Mobile user service IPs |
+| RemoteNetworkAddresses | Remote network service IPs |
+| CleanPipeAddresses | Clean Pipe service IPs |
+| ExplicitProxyAddresses | Explicit proxy service IPs |
+| loopback_ip | Loopback IPs for gateways, portals, remote network |
 
 ---
 
-## How it Works (Endpoints)
+## How it Works
 
-- **Loopback**  
-  `GET {base}/getAddrList/latest?fwType={gpcs_gp_gw|gpcs_gp_portal|gpcs_remote_network}&addrType=loopback_ip`  
-  - Uses `result.addrList[]` entries of the form `"<location>:<ip>"`
+### Standard datasets
 
-- **Other datasets**  
-  `POST {base}/getPrismaAccessIP/v2` with a small JSON body derived from `-dataType/--dataType`  
-  - Uses `result[].address_details[]`
+1. Validate input  
+2. Build API URL  
+3. Add API key header  
+4. Call `/getPrismaAccessIP/v2`  
+5. Parse `result[].address_details[]`  
+6. Format output  
+
+### Loopback
+
+1. Query:
+   - gpcs_gp_gw  
+   - gpcs_gp_portal  
+   - gpcs_remote_network  
+2. Use `/getAddrList/latest`  
+3. Parse `result.addrList[]`  
+4. Combine results  
+
+---
+
+## Exporting Output
+
+### Console
+Default output if no file specified
+
+### CSV
+- Flattened table format
+
+### JSON
+- Structured API response
+
+### TXT
+- One IP per line  
+- Loopback strips `<location>:` prefix  
+
+---
+
+## Empty Results
+
+Empty results are treated as an error condition.
+
+Check:
+- dataset
+- environment
+- region
+- API key access
+
+---
+
+## Exit Codes and Errors
+
+- `0` → success  
+- non-zero → error  
+
+Common causes:
+- invalid API key  
+- invalid environment  
+- unsupported dataset  
+- API failure  
+- empty results  
 
 ---
 
 ## Troubleshooting
 
-- **“Invalid environment…”** → Only `prod`, `prod2`…`prod7` are allowed.
-- **Empty results** → Service might not be deployed for your tenant/region.
-- **China tenants** → Remember `-region CN` / `--region CN`.
-- **PowerShell execution policy** → You may need to enable script execution:
-  ```powershell
-  Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-  ```
+### python3 issues
+
+Use:
+
+```bash
+python format-egress-ips.py
+```
 
 ---
 
-## Development
+### Install issues
 
-- Python key functions: `send_api_request`, `display_formatted_result`, `display_loopback_ips`, `save_to_file`
-- PowerShell mirrors the same flow (Invoke-RestMethod, dataset body map, export helpers)
-- Nice-to-haves: retries/backoff, unit tests, GitHub Actions, Dockerfile
+```bash
+python -m pip install -r requirements.txt
+```
 
 ---
 
-## License
+### PowerShell blocked
 
-MIT (see `LICENSE`).
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
 
+---
+
+### Wrong region
+
+- Use `CN` for China  
+- Use anything else for global  
+
+---
+
+### Invalid dataset
+
+Ensure correct value from dataset table
+
+---
+
+### Unsupported file type
+
+Use:
+- .csv
+- .json
+- .txt
+
+---
+
+## Notes
+
+- Use `python -m pip`
+- Prefer `python` over `python3`
+- Loopback queries multiple firewall types automatically
