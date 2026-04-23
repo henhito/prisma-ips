@@ -39,8 +39,11 @@ Example prompts:
 
 ```
 Enter API Key:
-Enter environment (e.g., prod, prod2 to prod7):
-Enter dataType:
+Enter environment (e.g., prod, prod2 to prod7): prod
+Fetching data for EgressIPs...
+                Zone    ServiceType         Address           AddressType
+     Germany Central remote_network         2.2.2.2            active
+     Germany Central remote_network         1.1.1.1            active
 ```
 
 ---
@@ -55,8 +58,11 @@ Example prompts:
 
 ```
 Enter API Key:
-Enter environment (e.g., prod, prod2 to prod7):
-Enter dataType:
+Enter environment (e.g., prod, prod2 to prod7): prod
+Fetching data for EgressIPs...
+                Zone    ServiceType         Address           AddressType
+     Germany Central remote_network         2.2.2.2            active
+     Germany Central remote_network         1.1.1.1            active
 ```
 
 ---
