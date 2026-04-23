@@ -44,6 +44,9 @@ Fetching data for EgressIPs...
                 Zone    ServiceType         Address           AddressType
      Germany Central remote_network         2.2.2.2            active
      Germany Central remote_network         1.1.1.1            active
+              Global      swg_proxy         3.3.3.3            auth_cache_service
+Do you want to export the results to a CSV file? (Y/N): y
+Enter the full file name for the CSV (e.g., output.csv): output.csv
 ```
 
 ---
@@ -63,6 +66,9 @@ Fetching data for EgressIPs...
                 Zone    ServiceType         Address           AddressType
      Germany Central remote_network         2.2.2.2            active
      Germany Central remote_network         1.1.1.1            active
+              Global      swg_proxy         3.3.3.3            auth_cache_service
+Do you want to export the results to a CSV file? (Y/N): y
+Enter the full file name for the CSV (e.g., output.csv): output.csv
 ```
 
 ---
