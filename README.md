@@ -1,200 +1,132 @@
 # Prisma Access IP Utilities
 
-Fetch Prisma Access service IP data from Prisma Access APIs and display it in the console or export it as CSV, JSON, or TXT. The project includes both a Python implementation and a PowerShell implementation.
+Fetch Prisma Access service IP data from Prisma Access APIs and display it in the console or export it as CSV, JSON, or TXT.
 
 ---
 
 ## 🚀 Quick Start
 
-### Python (30 seconds)
+### Python
 
 ```bash
 git clone https://github.com/henhito/prisma-ips.git
 cd prisma-ips
 python -m pip install -r requirements.txt
-python format-egress-ips.py --dataType EgressIPs
+python format-egress-ips.py --api_key ABC123EXAMPLEKEY --environment prod --dataType EgressIPs
 ```
 
-### PowerShell (30 seconds)
+### PowerShell
 
 ```powershell
 git clone https://github.com/henhito/prisma-ips.git
 cd prisma-ips
-.\format-egress-ips.ps1 -environment prod -dataType EgressIPs
+.ormat-egress-ips.ps1 -api_key ABC123EXAMPLEKEY -environment prod -dataType EgressIPs
 ```
 
 ---
 
 ## 🧭 Interactive Mode
 
-Both scripts support interactive mode. If required parameters are not provided, the script will prompt for them.
-
-### Python Interactive Example
+Run without parameters:
 
 ```bash
 python format-egress-ips.py
 ```
 
-Example prompts:
-
-```
-Enter API Key:
-Enter environment (e.g., prod, prod2 to prod7):
-Enter dataType:
-```
-
----
-
-### PowerShell Interactive Example
-
 ```powershell
-.\format-egress-ips.ps1
-```
-
-Example prompts:
-
-```
-Enter API Key:
-Enter environment (e.g., prod, prod2 to prod7):
-Enter dataType:
+.ormat-egress-ips.ps1
 ```
 
 ---
 
-### Partial Interactive Usage
+## 🔐 Authentication
 
-You can provide some parameters and be prompted for the rest.
+API key only (header-api-key).
 
-```bash
-python format-egress-ips.py --dataType EgressIPs
+Example:
+
+```
+ABC123EXAMPLEKEY
+XYZ789DEMOAPIKEY
 ```
 
-```powershell
-.\format-egress-ips.ps1 -dataType EgressIPs
-```
+---
+
+## 🌍 Regions
+
+- CN → China (.cn)
+- Others → Global (.com)
 
 ---
 
-## Authentication
-
-Authentication is API key only.
-
-The scripts send the API key using the `header-api-key` HTTP header.
-
----
-
-## Regions and API Domains
-
-- `CN` → China tenant → `.cn` domain  
-- Any other value → Global tenant → `.com` domain  
-
-Base URL format:
-
-- China:
-  `https://api.{environment}.datapath.prismaaccess.cn`
-- Global:
-  `https://api.{environment}.datapath.prismaaccess.com`
-
----
-
-## Environments
-
-Valid values:
+## 🏢 Environments
 
 ```
 prod
 prod2
 prod3
-prod4
-prod5
-prod6
-prod7
 ```
 
 ---
 
-## Datasets
-
-| Data type | Description |
-|----------|-------------|
-| EgressIPs | Prisma Access egress/public service IPs |
-| ActiveReservedOnboardedMobileUserLocations | Reserved/onboarded mobile user locations |
-| ActiveIPOnboardedMobileUserLocations | Active IP-based mobile user locations |
-| ActiveMobileUserAddresses | Mobile user service IPs |
-| RemoteNetworkAddresses | Remote network service IPs |
-| CleanPipeAddresses | Clean Pipe service IPs |
-| ExplicitProxyAddresses | Explicit proxy service IPs |
-| loopback_ip | Loopback IPs for gateways, portals, remote network |
-
----
-
-## How it Works
-
-### Standard datasets
-
-1. Validate input  
-2. Build API URL  
-3. Add API key header  
-4. Call `/getPrismaAccessIP/v2`  
-5. Parse `result[].address_details[]`  
-6. Format output  
-
-### Loopback
-
-1. Query:
-   - gpcs_gp_gw  
-   - gpcs_gp_portal  
-   - gpcs_remote_network  
-2. Use `/getAddrList/latest`  
-3. Parse `result.addrList[]`  
-4. Combine results  
-
----
-
-## Exporting Output
+## 📊 Example Output
 
 ### Console
-Default output if no file specified
+
+```
++----------------+----------------+
+| Location       | IP Address     |
++----------------+----------------+
+| US-East        | 34.120.10.1    |
+| US-West        | 35.201.22.5    |
++----------------+----------------+
+```
+
+---
 
 ### CSV
-- Flattened table format
+
+```
+Location,IP
+US-East,34.120.10.1
+US-West,35.201.22.5
+```
+
+---
 
 ### JSON
-- Structured API response
+
+```json
+[
+  {
+    "location": "US-East",
+    "ip": "34.120.10.1"
+  },
+  {
+    "location": "US-West",
+    "ip": "35.201.22.5"
+  }
+]
+```
+
+---
 
 ### TXT
-- One IP per line  
-- Loopback strips `<location>:` prefix  
+
+```
+34.120.10.1
+35.201.22.5
+```
 
 ---
 
-## Empty Results
+## 🛠 Troubleshooting
 
-Empty results are treated as an error condition.
+### pandas error
 
-Check:
-- dataset
-- environment
-- region
-- API key access
-
----
-
-## Exit Codes and Errors
-
-- `0` → success  
-- non-zero → error  
-
-Common causes:
-- invalid API key  
-- invalid environment  
-- unsupported dataset  
-- API failure  
-- empty results  
-
----
-
-## Troubleshooting
+```bash
+python -m pip install pandas
+```
 
 ### python3 issues
 
@@ -206,46 +138,7 @@ python format-egress-ips.py
 
 ---
 
-### Install issues
-
-```bash
-python -m pip install -r requirements.txt
-```
-
----
-
-### PowerShell blocked
-
-```powershell
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-
----
-
-### Wrong region
-
-- Use `CN` for China  
-- Use anything else for global  
-
----
-
-### Invalid dataset
-
-Ensure correct value from dataset table
-
----
-
-### Unsupported file type
-
-Use:
-- .csv
-- .json
-- .txt
-
----
-
 ## Notes
 
-- Use `python -m pip`
-- Prefer `python` over `python3`
-- Loopback queries multiple firewall types automatically
+- Use python not python3
+- Use python -m pip
